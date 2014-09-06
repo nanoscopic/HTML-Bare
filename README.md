@@ -1,4 +1,4 @@
-HTML-Bare
+HTML::Bare
 =========
 
-Mixed C/Perl HTML Parser
+Mixed C/Perl HTML Parser.
