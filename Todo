@@ -1,0 +1,29 @@
+HTML::Bare Todo
+
+0.02
+  [] Add an 'inner' function to fetch just the raw inner contents of a node
+  [] Provide a way to store/keep track of original input text so that the 'raw'
+     function can still work when multi part parsing is done.
+  [] Allow a specific set of tagnames to be auto-closing
+  [] Create an efficient way to handle entities ( A long desired feature by many
+     people for XML::Bare... )
+  [] Alter the parsing engine to store all intermediary values, because unlike
+     XML typically mixed values have meaning.
+  [] Revamp the module to use Tied hashes instead of real hashes so that you
+     can properly navigate around the tree, and also so that nodes can be read in
+     order with properly mixed content.
+  [] Add in recognition of nodes that require special parsing such as CSS and JS
+     [] Simply skip through them looking for a corresponding end node
+     [] Actually parse CSS
+     [] Actually parse JS
+  [] Parse and store doctype meaningfully
+  [] Add a function to efficientlly go through a string and strip extra spacing
+     since many times extra spacing in HTML is meaningless
+  [] Benchmark the HTML parser against other libraries
+     Currently the included bench folder is just a copy from XML::Bare.
+
+0.01
+  [] Allow multi part parsing to work again by way of a serialized name stack
+     that can be reinitiated.
+  [] Alter the tests to be reasonable for HTML processing instead of just copies
+     of the original XML tests
