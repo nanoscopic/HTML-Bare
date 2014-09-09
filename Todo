@@ -1,5 +1,9 @@
 HTML::Bare Todo
 
+0.03
+  [] Write better tests for utf8 support.
+  [] Write code capable of parsing encoding besides basic ascii and utf8. It's messy but should be useful to some people.
+
 0.02
   [] Add an 'inner' function to fetch just the raw inner contents of a node
   [] Provide a way to store/keep track of original input text so that the 'raw'

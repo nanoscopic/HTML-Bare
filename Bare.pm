@@ -8,7 +8,7 @@ use utf8;
 require Exporter;
 require DynaLoader;
 @ISA = qw(Exporter DynaLoader);
-$VERSION = "0.02";
+$VERSION = "0.03";
 use vars qw($VERSION *AUTOLOAD);
 
 *AUTOLOAD = \&XML::Bare::AUTOLOAD;
@@ -23,7 +23,7 @@ HTML::Bare - Minimal HTML parser implemented via a C state engine
 
 =head1 VERSION
 
-0.02
+0.03
 
 =cut
 

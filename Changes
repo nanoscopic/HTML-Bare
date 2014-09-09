@@ -1,5 +1,8 @@
 HTML::Bare Changelog
 
+0.03
+  - Disable utf8 tests until they can be implemented better. The current tests are inadequate and not compatible across perl versions.
+
 0.02
   - Correct bugs related to self closing nodes. ( name stack was not being properly maintained for them )
   - Add a unit test, Bug_self_closing.t, to test fixed bugs
