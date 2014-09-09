@@ -14,7 +14,7 @@ configure_requires:
   ExtUtils::MakeMaker: 6.30
 dynamic_config: 1
 generated_by: 'ExtUtils::MakeMaker version 6.68, CPAN::Meta::Converter version 2.112621'
-license: perl
+license: GNU AGPLv3
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
   version: 1.4
@@ -27,4 +27,4 @@ requires:
   Carp: 0
   DynaLoader: 0
   Exporter: 0
-version: 0.53
+version: 0.03

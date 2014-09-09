@@ -1,7 +1,9 @@
 HTML::Bare Changelog
 
 0.03
-  - Disable utf8 tests until they can be implemented better. The current tests are inadequate and not compatible across perl versions.
+  - Remove utf8 tests entirely as they were written by Nigel Metheringham and taint the license and copyright of the project.
+    New tests will be written that are sensible and do not break on specific perl versions.
+  - Change license of the project to AGPL to prevent commerical usage as a service.
 
 0.02
   - Correct bugs related to self closing nodes. ( name stack was not being properly maintained for them )
