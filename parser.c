@@ -1,4 +1,5 @@
 #include "parser.h"
+#include "str_lookup.h"
 #include<stdio.h>
 #ifdef DARWIN
   #include "stdlib.h"
@@ -29,6 +30,21 @@ int dh_memcmp2(char *a,int na,char *b,int nb) {
     a++; b++; c++;
   }
   return 0;
+}
+
+struct parserc *new_parserc() {
+  int size = sizeof( struct parserc );
+  struct parserc *self = (struct parserc *) malloc( size );
+  memset( (char *) self, 0, size );
+  self->last_state = 0;
+  struct str_lookup_c *l = self->lookup = str_lookup__new();
+  str_lookup__add_str( l, "br", 2, 2 );
+  str_lookup__add_str( l, "hr", 2, 2 );
+  str_lookup__add_str( l, "img", 3, 2 );
+  str_lookup__add_str( l, "input", 5, 2 );
+  str_lookup__add_str( l, "meta", 4, 2 );
+  str_lookup__add_str( l, "embed", 5, 2 );
+  return self;
 }
 
 struct nodec *new_nodecp( struct nodec *newparent ) {
@@ -142,6 +158,8 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
     int    res            = 0;
     int    dent;
     register int let;
+    
+    struct str_lookup_c *lookup = self->lookup;
     
     if( self->last_state ) {
       #ifdef DEBUG
@@ -368,6 +386,13 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
           cpos++;
           goto name_gap;
         case '>':
+          if( str_lookup__find_str( lookup, tagname, tagname_len ) ) {
+            temp = nodec_addchildr( curnode, tagname, tagname_len );
+            temp->z = cpos +1 - htmlin;
+            tagname_len            = 0;
+            cpos++;
+            goto val_1;
+          }
           curnode     = nodec_addchildr( curnode, tagname, tagname_len );
           curname     = new_namec( curname, curnode->name, curnode->namelen );
           cpos++;
@@ -397,6 +422,14 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
           cpos++;
           goto name_gap;
         case '>':
+          if( str_lookup__find_str( lookup, tagname, tagname_len ) ) {
+            curnode->z = cpos+1-htmlin;
+            curname = del_namec( curname );
+            curnode = curnode->parent;
+            if( !curnode ) goto done;
+            cpos++; // am assuming next char is >
+            goto val_1;
+          }
           cpos++;
           goto val_1;
         case '/': // self closing
@@ -474,6 +507,18 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
           cpos++;
           goto att_space;
         case '>':
+          if( str_lookup__find_str( lookup, tagname, tagname_len ) ) {
+            curatt = nodec_addattr( curnode, attname, attname_len );
+            if( !att_has_val ) { curatt->value = -1; curatt->vallen = 0; }
+            attname_len            = 0;
+            
+            curnode->z = cpos+1-htmlin;
+            curname = del_namec( curname );
+            curnode = curnode->parent;
+            if( !curnode ) goto done;
+            cpos++;
+            goto val_1;
+          }
           curatt = nodec_addattr( curnode, attname, attname_len );
           if( !att_has_val ) { curatt->value = -1; curatt->vallen = 0; }
           attname_len = 0;
@@ -540,7 +585,17 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
         case '"':  cpos++; goto att_quot;
         case 0x27: cpos++; goto att_quots; //'
         case '`':  cpos++; goto att_tick;
-        case '>':  cpos++; goto val_1;
+        case '>': 
+          if( str_lookup__find_str( lookup, tagname, tagname_len ) ) {
+            curnode->z = cpos+1-htmlin;
+            curname = del_namec( curname );
+            curnode = curnode->parent;
+            if( !curnode ) goto done;
+            cpos++;
+            goto att_eq1;
+          }
+          cpos++; 
+          goto val_1;
         case ' ':  cpos++; goto att_eq1;
       }  
       if( !attval_len ) attval = cpos;
@@ -566,6 +621,17 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
           }
           break;
         case '>':
+          if( str_lookup__find_str( lookup, tagname, tagname_len ) ) {
+            curnode->z = cpos+1-htmlin;
+            curname = del_namec( curname );
+            curnode = curnode->parent;
+            if( !curnode ) goto done; // bad error condition
+            curatt->value = attval;
+            curatt->vallen = attval_len;
+            attval_len    = 0;
+            cpos++;
+            goto val_1;
+          }
           curatt->value = attval;
           curatt->vallen = attval_len;
           attval_len    = 0;
@@ -729,6 +795,32 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
       printf("returning\n", *cpos);
       #endif
       return 0;//no error
+}
+
+void parserc_get_pos( struct parserc *self ) {
+  struct nodec *cur = self->curnode;
+  int depth = 0;
+  while( cur ) {
+    depth++;
+    cur = cur->parent;
+  }
+  depth--;
+  char **names = malloc( sizeof( char * ) * depth );
+  int **namelens = malloc( sizeof( int ) * depth );
+  
+  int i = 0;
+  cur = self->curnode;
+  while( cur ) {
+    namelens[ i ] = cur->namelen;
+    names[ i++ ] = cur->name;
+    //printf("Found node %.*s %p\n", cur->namelen, cur->name, cur ); 
+    if( i >= depth ) break;
+    cur = cur->parent;
+  }
+  
+  self->depth = depth;
+  self->names = names;
+  self->namelens = namelens;
 }
 
 int parserc_parse_unsafely( struct parserc *self, char *htmlin ) {
@@ -1064,6 +1156,7 @@ struct nodec *nodec_addchildr(  struct nodec *self, char *newname, int newnamele
   struct nodec *newnode = new_nodecp( self );
   newnode->name    = newname;
   newnode->namelen = newnamelen;
+  //printf("Created node %.*s %p\n", newnamelen, newname, newnode ); 
   if( self->numchildren == 0 ) {
     self->firstchild = newnode;
     self->lastchild  = newnode;

@@ -44,6 +44,7 @@ struct attc *nodec_addattr  ( struct nodec *self, char *newname, int newnamelen 
 
 struct nodec *new_nodecp( struct nodec *newparent );
 struct nodec *new_nodec();
+struct parserc *new_parserc();
 void del_nodec( struct nodec *node );
 
 struct attc {
@@ -68,6 +69,11 @@ struct parserc {
     int    att_has_val;
     int    last_state;
     char *rootpos;
+    struct str_lookup_c *lookup;
+    
+    int depth;
+    char ***names;
+    int **namelens;
 };
 
 int parserc_parse( struct parserc *self, char *newbuf );

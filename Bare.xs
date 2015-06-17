@@ -325,6 +325,29 @@ html2obj_simple( parsersv )
     RETVAL
 
 SV *
+c_get_parse_position( parsersv )
+  SV *parsersv
+  CODE:
+    struct parserc *parser = INT2PTR( struct parserc *, SvUV( parsersv ) );
+    parserc_get_pos( parser );
+    HV *hash = newHV();
+    AV *names = newAV();
+    int depth = parser->depth;
+    int i;
+    for( i=0;i<depth;i++ ) {
+      char *name = parser->names[ i ];
+      int namelen = parser->namelens[ i ];
+      SV *string = newSVpvn( name, namelen );
+      av_push( names, string );
+    }
+    hv_store( hash, "depth", 5, newSViv( parser->depth ), 0 );
+    SV *nameref = newRV( (SV*) names );
+    hv_store( hash, "names", 5, nameref, 0 );
+    RETVAL = newRV( ( SV* ) hash );
+  OUTPUT:
+    RETVAL
+
+SV *
 c_parse_more( text, parsersv )
   char * text
   SV *parsersv
@@ -341,8 +364,7 @@ c_parse(text)
   CODE:
     init_hashes();
     
-    struct parserc *parser = (struct parserc *) malloc( sizeof( struct parserc ) );
-    parser->last_state = 0;
+    struct parserc *parser = new_parserc();
     int err = parserc_parse( parser, text );
     RETVAL = newSVuv( PTR2UV( parser ) );
   OUTPUT:
@@ -354,8 +376,7 @@ c_parse_unsafely(text)
   CODE:
     init_hashes();
     
-    struct parserc *parser = (struct parserc *) malloc( sizeof( struct parserc ) );
-    parser->last_state = 0;
+    struct parserc *parser = new_parserc();
     int err = parserc_parse_unsafely( parser, text );
     RETVAL = newSVuv( PTR2UV( parser ) );
   OUTPUT:
@@ -382,8 +403,7 @@ c_parsefile(filename)
     rootpos = data;
     fread( data, 1, len, handle );
     fclose( handle );
-    struct parserc *parser = (struct parserc *) malloc( sizeof( struct parserc ) );
-    parser->last_state = 0;
+    struct parserc *parser = new_parserc();
     int err = parserc_parse( parser, data );
     //free( parser );
     RETVAL = newSVuv( PTR2UV( parser ) );

@@ -126,6 +126,11 @@ sub parse {
   return $self->{ 'html' };
 }
 
+sub get_parse_position {
+  my $self = shift;
+  return HTML::Bare::c_get_parse_position( $self->{'parser'} );
+}
+
 # html bare schema
 sub check {
   my ( $self, $node, $scheme, $parent ) = @_;

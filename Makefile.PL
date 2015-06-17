@@ -59,7 +59,7 @@ sub gen_msvc {
   WriteMakefile( @basics,
     CCFLAGS   => "/MT /DWIN32 /TP /DNOSTRING",
     LIBS      => ["$libpath\\core\\perl$major$minor.lib"],
-    OBJECT    => 'Bare.o parser.o',
+    OBJECT    => 'Bare.o parser.o str_lookup.o',
     LDDLFLAGS => '/DLL /NODEFAULTLIB:libcmt',
     #OPTIMIZE  => '-Zl -DNDEBUG -O1', # Because -MD is included by default BLEH
   );
@@ -67,14 +67,14 @@ sub gen_msvc {
 sub gen_cc {
   WriteMakefile( @basics,
     LIBS      => ['-lm'],
-    OBJECT    => 'Bare.o parser.o',
+    OBJECT    => 'Bare.o parser.o str_lookup.o',
     LDDLFLAGS => '-shared -L/usr/local/lib',
   );
 }
 sub gen_solaris {
   WriteMakefile( @basics,
     LIBS      => ['-lm'],
-    OBJECT    => 'Bare.o parser.o',
+    OBJECT    => 'Bare.o parser.o str_lookup.o',
     LDDLFLAGS => '-G -L/usr/local/lib', # -G is equiv of -shared
   );
 }
@@ -85,7 +85,7 @@ sub gen_darwin {
   }
   WriteMakefile( @basics,
     LIBS      => ['-lm'],
-    OBJECT    => 'Bare.o parser.o',
+    OBJECT    => 'Bare.o parser.o str_lookup.o',
     CCFLAGS   => "-dynamiclib -DDARWIN -fno-common",
     LDDLFLAGS => '',
   );
