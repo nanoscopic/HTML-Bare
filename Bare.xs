@@ -343,9 +343,17 @@ c_get_parse_position( parsersv )
     hv_store( hash, "depth", 5, newSViv( parser->depth ), 0 );
     SV *nameref = newRV( (SV*) names );
     hv_store( hash, "names", 5, nameref, 0 );
+    hv_store( hash, "position", 8, newSViv( parser->parsecount ), 0 );
     RETVAL = newRV( ( SV* ) hash );
   OUTPUT:
     RETVAL
+
+void
+c_stop_outside( parsersv )
+  SV *parsersv
+  CODE:
+    struct parserc *parser = INT2PTR( struct parserc *, SvUV( parsersv ) );
+    parserc_stop_outside( parser );
 
 SV *
 c_parse_more( text, parsersv )

@@ -55,14 +55,14 @@ void str_lookup__add_str( struct str_lookup_c * self, char *str, int strlen, int
 
 int str_lookup__find_str( struct str_lookup_c *self, char *str, int strlen ) {
   //int strlen = strlen( str );
-  printf("Looking for [%.*s]\n", strlen, str );
+  //printf("Looking for [%.*s]\n", strlen, str );
   if( strlen == 1 ) {
     int a = self->type[ str[0]-'a' ];
-    printf("Found %i\n", a );
+    //printf("Found %i\n", a );
     return a;
   }
   int a = str_lookup__find_str_mid( self->root, str, strlen );
-  printf("Found %i\n", a );
+  //printf("Found %i\n", a );
   return a;
 }
 

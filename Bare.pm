@@ -89,6 +89,9 @@ sub read_more {
         $self->{"text$i"} = $p{'text'};
         HTML::Bare::c_parse_more( $self->{"text$i"}, $self->{'parser'} );
     }
+    my $res = HTML::Bare::html2obj( $self->{'parser'} );
+    $self->{ 'html' } = $res;
+    return $self->{'html'};
 }
 
 sub raw {
@@ -129,6 +132,11 @@ sub parse {
 sub get_parse_position {
   my $self = shift;
   return HTML::Bare::c_get_parse_position( $self->{'parser'} );
+}
+
+sub stop_outside {
+  my $self = shift;
+  return HTML::Bare::c_stop_outside( $self->{'parser'} );
 }
 
 # html bare schema

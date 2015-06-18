@@ -148,6 +148,7 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
     struct nodec *curnode = NULL;
     struct attc  *curatt  = NULL;
     int    last_state     = 0;
+    int    stop_outside   = 0;
     self->rootpos = htmlin;
     // HTML stuff
     struct namec *curname = new_namec( NULL, "", 0 );
@@ -173,6 +174,7 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
       attname = self->attname; attname_len = self->attname_len;
       attval = self->attval; attval_len = self->attval_len;
       att_has_val = self->att_has_val;
+      stop_outside = self->stop_outside;
       switch( self->last_state ) {
         case ST_val_1: goto val_1;
         case ST_val_x: goto val_x;
@@ -208,7 +210,9 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
     #ifdef DEBUG
     printf("Entry to C Parser\n");
     #endif
-    
+    goto val_1;
+    outside_all:
+      if( stop_outside ) goto done;
     val_1:
       #ifdef DEBUG
       printf("val_1: %c\n", *cpos);
@@ -402,6 +406,7 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
           temp->z = cpos +1 - htmlin;
           tagname_len            = 0;
           cpos+=2;
+          if( curnode == root ) goto outside_all;
           goto val_1;
       }
       
@@ -438,6 +443,7 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
           curnode = curnode->parent;
           if( !curnode ) goto done;
           cpos+=2; // am assuming next char is >
+          if( curnode == root ) goto outside_all;
           goto val_1;
         case '=':
           cpos++;
@@ -496,6 +502,7 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
           curnode = curnode->parent;
           if( !curnode ) goto done;
           cpos += 2;
+          if( curnode == root ) goto outside_all;
           goto val_1;
         case ' ':
           if( *(cpos+1) == '=' ) {
@@ -617,6 +624,7 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
             curatt->vallen = attval_len;
             attval_len    = 0;
             cpos += 2;
+            if( curnode == root ) goto outside_all;
             goto val_1;
           }
           break;
@@ -759,7 +767,7 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
         if( !curnode ) goto done;
         tagname_len++;
         cpos++;
-        
+        if( curnode == root ) goto outside_all;
         goto val_1;
       }
       if( !let ) { last_state = ST_ename_x; goto done; }
@@ -782,6 +790,7 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
       self->attname = attname; self->attname_len = attname_len;
       self->attval  = attval;  self->attval_len  = attval_len;
       self->att_has_val = att_has_val;
+      self->parsecount = cpos - htmlin;
       
       // clean up name stack
       while( curname ) {
@@ -795,6 +804,10 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
       printf("returning\n", *cpos);
       #endif
       return 0;//no error
+}
+
+void parserc_stop_outside( struct parserc *self ) {
+  self->stop_outside = 1;
 }
 
 void parserc_get_pos( struct parserc *self ) {

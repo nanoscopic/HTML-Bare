@@ -70,6 +70,9 @@ struct parserc {
     int    last_state;
     char *rootpos;
     struct str_lookup_c *lookup;
+    int parsecount;
+    int stop_outside;
+    
     
     int depth;
     char ***names;
