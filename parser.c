@@ -175,6 +175,7 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
       attval = self->attval; attval_len = self->attval_len;
       att_has_val = self->att_has_val;
       stop_outside = self->stop_outside;
+      curname = self->curname;
       switch( self->last_state ) {
         case ST_val_1: goto val_1;
         case ST_val_x: goto val_x;
@@ -205,6 +206,7 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
     else {
       self->err = 0;
       curnode = root = self->rootnode = new_nodec();
+      curname = new_namec( NULL, "", 0 );
     }
     
     #ifdef DEBUG
@@ -791,14 +793,15 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
       self->attval  = attval;  self->attval_len  = attval_len;
       self->att_has_val = att_has_val;
       self->parsecount = cpos - htmlin;
+      self->curname = curname;
       
       // clean up name stack
-      while( curname ) {
+      /*while( curname ) {
         curname = del_namec( curname );
         #ifdef DEBUG
         printf("cleaning name stack\n");
         #endif
-      }
+      }*/
       
       #ifdef DEBUG
       printf("returning\n", *cpos);
