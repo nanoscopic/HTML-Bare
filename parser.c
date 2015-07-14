@@ -138,6 +138,26 @@ struct attc* new_attc( struct nodec *newparent ) {
 #define ST_ename_1 22
 #define ST_ename_x 23
 
+void parserc_cleanup( struct parserc *self ) {
+  #ifdef DEBUG
+  if(self->curname ) printf("cleaning name stack\n");
+  #endif
+  struct namec *curname = self->curname;
+  while( curname ) {
+    curname = del_namec( curname );
+  }
+  
+  if( self->depth ) {
+    int i;
+    for( i=0;i<self->depth;i++ ) {
+      free( self->names[ i ] );
+    }
+    free( self->names );
+    free( self->namelens );
+  }
+  
+}
+
 int parserc_parse( struct parserc *self, char *htmlin ) {
     // Variables that represent current 'state'
     struct nodec *root    = NULL;
@@ -151,7 +171,7 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
     int    stop_outside   = 0;
     self->rootpos = htmlin;
     // HTML stuff
-    struct namec *curname = new_namec( NULL, "", 0 );
+    struct namec *curname = 0;
     
     // Variables used temporarily during processing
     struct nodec *temp;
@@ -163,12 +183,22 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
     struct str_lookup_c *lookup = self->lookup;
     
     if( self->last_state ) {
+      curnode = self->curnode;
       #ifdef DEBUG
-      printf( "Resuming parse in state %i\n", self->last_state );
+      printf( "\nResuming parse in state %i\n", self->last_state );
+      struct namec *aname = 0;
+      aname = self->curname;
+      while( aname ) {
+        printf("Name stack: %.*s\n", aname->namelen, aname->name );
+        aname = aname->prev;
+      }
+      
+      printf("Name of current node: %.*s\n", curnode->namelen, curnode->name );
+      printf("Number of vals in current node: %i\n", curnode->numvals );
       #endif
       self->err = 0;
       root = self->rootnode;
-      curnode = self->curnode;
+      
       curatt = self->curatt;
       tagname = self->tagname; tagname_len = self->tagname_len;
       attname = self->attname; attname_len = self->attname_len;
@@ -178,7 +208,7 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
       curname = self->curname;
       switch( self->last_state ) {
         case ST_val_1: goto val_1;
-        case ST_val_x: goto val_x;
+        case ST_val_x: goto val_1;
         case ST_comment_1dash: goto comment_1dash;
         case ST_comment_2dash: goto comment_2dash;
         case ST_comment: goto comment;
@@ -781,7 +811,7 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
       return self->err;
     done:
       #ifdef DEBUG
-      printf("done\n", *cpos);
+      printf("done\n");
       #endif
       
       // store the current state of the parser
@@ -804,7 +834,7 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
       }*/
       
       #ifdef DEBUG
-      printf("returning\n", *cpos);
+      printf("returning\n");
       #endif
       return 0;//no error
 }
@@ -822,13 +852,15 @@ void parserc_get_pos( struct parserc *self ) {
   }
   depth--;
   char **names = malloc( sizeof( char * ) * depth );
-  int **namelens = malloc( sizeof( int ) * depth );
+  int *namelens = malloc( sizeof( int ) * depth );
   
   int i = 0;
   cur = self->curnode;
   while( cur ) {
     namelens[ i ] = cur->namelen;
-    names[ i++ ] = cur->name;
+    char *dup = malloc( cur->namelen );
+    strncpy( dup, cur->name, cur->namelen );
+    names[ i++ ] = dup;
     //printf("Found node %.*s %p\n", cur->namelen, cur->name, cur ); 
     if( i >= depth ) break;
     cur = cur->parent;

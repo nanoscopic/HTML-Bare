@@ -51,6 +51,9 @@ sub new {
       $self->{'text'} = <$HTML>;
     }
     close( $HTML );
+    #open(DX,">dumpx");
+    #print DX $self->{'text'}, "\n---\n";
+    #close(DX);
     $self->{'parser'} = HTML::Bare::c_parse( $self->{'text'} );
   }
   bless $self, "HTML::Bare::Object";
@@ -73,10 +76,11 @@ sub find_node { shift; return HTML::Bare::find_node( @_ ); }
 
 sub DESTROY {
   my $self = shift;
-  use Data::Dumper;
+  #use Data::Dumper;
   #print Dumper( $self );
   undef $self->{'text'};
   undef $self->{'i'};
+  $self->cleanup();
   $self->free_tree();
   undef $self->{'parser'};
 }
@@ -87,6 +91,9 @@ sub read_more {
     my $i = $self->{'i'}++;
     if( $p{'text'} ) {
         $self->{"text$i"} = $p{'text'};
+        #open(DX,">>dumpx");
+        #print DX $p{'text'}, "\n---\n";
+        #close(DX);
         HTML::Bare::c_parse_more( $self->{"text$i"}, $self->{'parser'} );
     }
     my $res = HTML::Bare::html2obj( $self->{'parser'} );
@@ -457,6 +464,7 @@ sub lineinfo {
 }
 
 sub free_tree { my $self = shift; HTML::Bare::free_tree_c( $self->{'parser'} ); }
+sub cleanup { my $self = shift; HTML::Bare::cleanup_c( $self->{'parser'} ); }
 
 package HTML::Bare;
 

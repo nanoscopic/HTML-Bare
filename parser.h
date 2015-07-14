@@ -75,11 +75,12 @@ struct parserc {
     struct namec *curname;
     
     int depth;
-    char ***names;
-    int **namelens;
+    char **names;
+    int *namelens;
 };
 
 int parserc_parse( struct parserc *self, char *newbuf );
+void parserc_cleanup( struct parserc *self );
 int parserc_parse_unsafely( struct parserc *self, char *newbuf );
 
 struct namec *new_namec( struct namec *last, char *name, int namelen );

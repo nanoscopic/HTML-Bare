@@ -427,3 +427,11 @@ free_tree_c( parsersv )
     struct nodec *rootnode = parser->rootnode;
     del_nodec( rootnode ); // note this frees the pointer as well
     free( parser );
+    
+void
+cleanup_c( parsersv )
+  SV *parsersv
+  CODE:
+    struct parserc *parser;
+    parser = INT2PTR( struct parserc *, SvUV( parsersv ) );
+    parserc_cleanup( parser );
