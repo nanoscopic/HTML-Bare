@@ -2,6 +2,8 @@
 #include<stdlib.h>
 #include<memory.h>
 
+//#define DEBUG
+
 struct mid_lookup_c * mid_lookup__new( int depth ) {
   int size = sizeof( struct mid_lookup_c );
   struct mid_lookup_c *self = (struct mid_lookup_c *) malloc( size );
@@ -55,10 +57,16 @@ void str_lookup__add_str( struct str_lookup_c * self, char *str, int strlen, int
 
 int str_lookup__find_str( struct str_lookup_c *self, char *str, int strlen ) {
   //int strlen = strlen( str );
-  //printf("Looking for [%.*s]\n", strlen, str );
+  #ifdef DEBUG
+  printf("1 Looking for [%.*s]\n", strlen, str );
+  #endif
   if( strlen == 1 ) {
-    int a = self->type[ str[0]-'a' ];
-    //printf("Found %i\n", a );
+    char let = str[0];
+    if( let <= 'a' || let >= 'z' ) return 0;
+    int a = self->type[ let-'a' ];
+    #ifdef DEBUG
+    printf("Found %i\n", a );
+    #endif
     return a;
   }
   int a = str_lookup__find_str_mid( self->root, str, strlen );
@@ -67,11 +75,20 @@ int str_lookup__find_str( struct str_lookup_c *self, char *str, int strlen ) {
 }
 
 int str_lookup__find_str_mid( struct mid_lookup_c *mid, char *str, int strlen ) {
+  #ifdef DEBUG
+  printf("2 Looking for [%.*s]\n", strlen, str );
+  #endif
   if( strlen == 2 ) { // we will be pointing to an end node
     //struct end_lookup_c *end = mid->down[ str[0] ];
     struct mid_lookup_c *end = mid->down[ str[0]-'a' ];
     if( !end ) return 0;
-    return end->type[ str[1]-'a' ];
+    char let = str[1];
+    if( let <= 'a' || let >= 'z' ) return 0;
+    int a = end->type[ let - 'a' ];
+    #ifdef DEBUG
+    printf("Found %i\n", a );
+    #endif
+    return a;
   }
   mid = mid->down[ str[ 0 ]-'a' ];
   if( !mid ) return 0;
