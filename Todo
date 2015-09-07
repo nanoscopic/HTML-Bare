@@ -1,5 +1,8 @@
 HTML::Bare Todo
 
+HEAD
+  [] Check XS code carefully to ensure '_noinc' calls are correct.
+
 0.04
   [] Allow which node names auto-close to be configurable
   [] Add tests for "parsing until root node is complete" feature
