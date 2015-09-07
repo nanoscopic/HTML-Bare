@@ -15,7 +15,7 @@ use vars qw($VERSION *AUTOLOAD);
 bootstrap HTML::Bare $VERSION;
 
 @EXPORT = qw( );
-@EXPORT_OK = qw( xget merge clean add_node del_node find_node del_node forcearray del_by_perl htmlin xval find_by_tagname find_by_id find_by_att nav );
+@EXPORT_OK = qw( xget merge clean add_node del_node find_node del_node forcearray del_by_perl htmlin xval find_by_tagname find_by_id find_by_att nav unmix );
 
 =head1 NAME
 
@@ -1092,6 +1092,31 @@ sub find_by_attr {
             find_by_attr( $item, $res, $att, $val );
         }
     }
+}
+
+# This name is based on the fact that different nodes in a row can be thought of as "mixed" xml
+# The parser doesn't retain mixed order, so it sort of "mixes" the ordered xml nodes
+# This function gives you a array of the nodes restored to their original order, "unmixing" them.
+# A clearer name for this would be "mixed_hash_to_ordered_nodes". That's a lot longer and more boring.
+sub unmix {
+    my $hash = shift;
+    
+    my @arr;
+    for my $key ( keys %$hash ) {
+        next if( $key =~ m/^_/ || $key =~ m/(value|name|comment)/ );
+        my $ob = $hash->{ $key };
+        if( ref( $ob ) eq 'ARRAY' ) {
+            for my $node ( @$ob ) {
+                push( @arr, { name => $key, node => $node } );
+            }
+        }
+        else {
+            push( @arr, { name => $key, node => $ob } );
+        }
+    }
+    #print Dumper( \@arr );
+    my @res = sort { $a->{'node'}{'_pos'} <=> $b->{'node'}{'_pos'} } @arr;
+    return \@res;
 }
 
 1;
