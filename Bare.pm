@@ -15,7 +15,7 @@ use vars qw($VERSION *AUTOLOAD);
 bootstrap HTML::Bare $VERSION;
 
 @EXPORT = qw( );
-@EXPORT_OK = qw( xget merge clean add_node del_node find_node del_node forcearray del_by_perl htmlin xval find_by_id find_by_att nav );
+@EXPORT_OK = qw( xget merge clean add_node del_node find_node del_node forcearray del_by_perl htmlin xval find_by_tagname find_by_id find_by_att nav );
 
 =head1 NAME
 
@@ -1018,10 +1018,12 @@ sub find_by_tagnamer {
         for my $name ( %$node ) {
             next if( $name =~ m/^_/ );
             next if( $name eq 'value' );
+            my $sub = $node->{ $name };
             if( $name eq $tagname ) {
-                push( @$res, $node );
+                if( ref( $sub ) eq 'ARRAY' ) { push( @$res, @$sub ); }
+                else                         { push( @$res, $sub  ); }
             }
-            find_by_tagnamer( $node->{$name}, $res, $tagname );
+            find_by_tagnamer( $sub, $res, $tagname );
         }
     }
     if( ref( $node ) eq 'ARRAY' ) {
@@ -1044,7 +1046,7 @@ sub find_by_idr {
         if( $node->{'id'} && $node->{'id'}{'value'} eq $id ) {
             push( @$res, $node );
         }
-        for my $name ( %$node ) {
+        for my $name ( keys %$node ) {
             next if( $name =~ m/^_/ );
             next if( $name eq 'value' );
             find_by_idr( $node->{$name}, $res, $id );
@@ -1067,10 +1069,19 @@ sub find_by_attr {
     my ( $node, $res, $att, $val ) = @_;
     if( ref( $node ) eq 'HASH' ) {
         return if( $node->{'_att'} );
-        if( $node->{$att} && $node->{$att}{'value'} eq $val ) {
+        if( $val =~ m/^\~(.+)/ ) {
+            my $rx = $1;
+            if( $node->{$att} ) {
+                my $nval = $node->{$att}{'value'};
+                if( $nval && $nval =~ m/$rx/ ) {
+                    push( @$res, $node );
+                }
+            }
+        }
+        elsif( $node->{$att} && $node->{$att}{'value'} eq $val ) {
             push( @$res, $node );
         }
-        for my $name ( %$node ) {
+        for my $name ( keys %$node ) {
             next if( $name =~ m/^_/ );
             next if( $name eq 'value' );
             find_by_attr( $node->{$name}, $res, $att, $val );
