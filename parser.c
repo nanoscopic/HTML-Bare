@@ -416,19 +416,31 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
         case ' ':
         case 0x0d:
         case 0x0a:
+          #ifdef DEBUG
+          //if( tagname_len ) printf("Creating tag named: %.*s\n", tagname, tagname_len );
+          #endif
           curnode     = nodec_addchildr( curnode, tagname, tagname_len );
           curname     = new_namec( curname, curnode->name, curnode->namelen );
           attname_len = 0;
           cpos++;
           goto name_gap;
         case '>':
+          #ifdef DEBUG
+          printf("Tagname length: %i\n", tagname_len );
+          #endif
           if( str_lookup__find_str( lookup, tagname, tagname_len ) ) {
+            #ifdef DEBUG
+            if( tagname_len ) printf("Creating tag named: %.*s\n", tagname, tagname_len );
+            #endif
             temp = nodec_addchildr( curnode, tagname, tagname_len );
             temp->z = cpos +1 - htmlin;
             tagname_len            = 0;
             cpos++;
             goto val_1;
           }
+          #ifdef DEBUG
+          //if( tagname_len ) printf("Creating tag named: %.*s\n", tagname, tagname_len );
+          #endif
           curnode     = nodec_addchildr( curnode, tagname, tagname_len );
           curname     = new_namec( curname, curnode->name, curnode->namelen );
           cpos++;
@@ -748,6 +760,9 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
       
     ename_1: // first character of a closing node "</Close>" ( the C )
       let = *cpos;
+      #ifdef DEBUG
+      printf("ename_1: %c\n", *cpos);
+      #endif
       if( let == '>' ) {
         curnode->namelen = tagname_len;
         curnode->z = cpos-htmlin;
@@ -766,6 +781,9 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
       
     ename_x: // ending name
       let = *cpos;
+      #ifdef DEBUG
+      printf("ename_x: %c\n", *cpos);
+      #endif
       if( let == '>' ) {
         //if( curnode->namelen != tagname_len ) {
         //  goto error;
@@ -781,9 +799,24 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
                 #endif
                 curname = del_namec( curname );
                 curnode = curnode->parent; // jump up
-                if( !curnode ) goto done;
+                if( !curnode ) {
+                    #ifdef DEBUG
+                    printf("Exit 786\n");
+                    #endif
+                    goto done;
+                }
             }
-            else break;
+            else {
+                curnode = curnode->parent; // jump up
+                curname = del_namec( curname );
+                if( !curnode ) {
+                    #ifdef DEBUG
+                    printf("Exit 795\n");
+                    #endif
+                    goto done;
+                }
+                break;
+            }
         }
         /*if( res = dh_memcmp( curnode->name, tagname, tagname_len ) ) {
           #ifdef DEBUG
@@ -794,10 +827,7 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
           goto error;
         }*/
         curnode->z = cpos-htmlin;
-        curnode = curnode->parent; // jump up
-        curname = del_namec( curname );
-        if( !curnode ) goto done;
-        tagname_len++;
+        //tagname_len++;
         cpos++;
         if( curnode == root ) goto outside_all;
         goto val_1;
