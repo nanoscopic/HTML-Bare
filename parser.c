@@ -24,7 +24,7 @@ int dh_memcmp(char *a,char *b,int n) {
 
 int dh_memcmp2(char *a,int na,char *b,int nb) {
   int c = 0;
-  if( na != nb ) return 0;
+  if( na != nb ) return 1;
   while( c < na ) {
     if( *a != *b ) return c+1;
     a++; b++; c++;
@@ -788,35 +788,52 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
         //if( curnode->namelen != tagname_len ) {
         //  goto error;
         //}
-        while( curname ) {
-            #ifdef DEBUG
-            printf("Comparing: curname->name=%.*s to %.*s\n", curname->namelen, curname->name, tagname_len, tagname );
-            #endif
-            int res = dh_memcmp2( curname->name, curname->namelen, tagname, tagname_len );
-            if( res ) { // ending tag does not match tag
-                #ifdef DEBUG
-                printf("Closing node not equal: curname->name=%.*s - opening tag=%.*s\n", tagname_len, curname->name, tagname_len, tagname );
-                #endif
-                curname = del_namec( curname );
-                curnode = curnode->parent; // jump up
-                if( !curnode ) {
-                    #ifdef DEBUG
-                    printf("Exit 786\n");
-                    #endif
-                    goto done;
-                }
-            }
-            else {
-                curnode = curnode->parent; // jump up
-                curname = del_namec( curname );
-                if( !curnode ) {
-                    #ifdef DEBUG
-                    printf("Exit 795\n");
-                    #endif
-                    goto done;
-                }
-                break;
-            }
+        struct namec *aname = curname;
+        char found = 0;
+        while( aname ) {
+          //printf("Name stack: %.*s\n", aname->namelen, aname->name );
+          int res = dh_memcmp2( aname->name, aname->namelen, tagname, tagname_len );
+          if( !res ) found = 1;
+          aname = aname->prev;
+        }
+        if( !curname->namelen || !found ) { // ending node that was never opened; really is an error, but ignore
+          cpos++;
+          #ifdef DEBUG
+          printf("Found a bogus closing node: %.*s\n", tagname_len, tagname );
+          #endif
+          goto val_1;
+        }
+        else {
+          while( curname ) {
+              #ifdef DEBUG
+              printf("Comparing: curname->name=%.*s to %.*s\n", curname->namelen, curname->name, tagname_len, tagname );
+              #endif
+              int res = dh_memcmp2( curname->name, curname->namelen, tagname, tagname_len );
+              if( res ) { // ending tag does not match tag
+                  #ifdef DEBUG
+                  printf("Closing node not equal: curname->name=%.*s - opening tag=%.*s\n", tagname_len, curname->name, tagname_len, tagname );
+                  #endif
+                  curname = del_namec( curname );
+                  curnode = curnode->parent; // jump up
+                  if( !curnode ) {
+                      #ifdef DEBUG
+                      printf("Exit 786\n");
+                      #endif
+                      goto done;
+                  }
+              }
+              else { // ending tag matches
+                  curnode = curnode->parent; // jump up
+                  curname = del_namec( curname );
+                  if( !curnode ) {
+                      #ifdef DEBUG
+                      printf("Exit 795\n");
+                      #endif
+                      goto done;
+                  }
+                  break;
+              }
+          }
         }
         /*if( res = dh_memcmp( curnode->name, tagname, tagname_len ) ) {
           #ifdef DEBUG
