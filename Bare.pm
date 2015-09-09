@@ -982,29 +982,44 @@ sub nav {
 }
 
 sub find_by_tagname {
-    my ( $node, $tagname ) = @_;
+    my ( $node, $tagname, $depth ) = @_;
     my @nodes;
-    find_by_tagnamer( $node, \@nodes, $tagname );
+    if( !$depth ) { $depth = 400; }
+    my $rx = 0;
+    if( $tagname =~ m/\~(.+)/ ) {
+      $tagname = $1;
+      $rx = 1;
+    }
+    find_by_tagnamer( $node, \@nodes, $tagname, $rx, $depth );
     return \@nodes;
 }
 sub find_by_tagnamer {
-    my ( $node, $res, $tagname ) = @_;
+    my ( $node, $res, $tagname, $rx, $depth ) = @_;
     if( ref( $node ) eq 'HASH' ) {
         return if( $node->{'_att'} );
         for my $name ( %$node ) {
             next if( $name =~ m/^_/ );
             next if( $name eq 'value' );
             my $sub = $node->{ $name };
-            if( $name eq $tagname ) {
+            my $match = 0;
+            if( $rx ) {
+                if( $name =~ m/$tagname/ ) {
+                    $match = 1;
+                }
+            }
+            elsif( $name eq $tagname ) {
+                $match = 1;
+            }
+            if( $match ) {
                 if( ref( $sub ) eq 'ARRAY' ) { push( @$res, @$sub ); }
                 else                         { push( @$res, $sub  ); }
             }
-            find_by_tagnamer( $sub, $res, $tagname );
+            find_by_tagnamer( $sub, $res, $tagname, $rx,  $depth - 1 ) if( $depth );
         }
     }
     if( ref( $node ) eq 'ARRAY' ) {
         for my $item ( @$node ) {
-            find_by_tagnamer( $item, $res, $tagname );
+            find_by_tagnamer( $item, $res, $tagname, $rx, $depth );
         }
     }
 }
@@ -1036,13 +1051,14 @@ sub find_by_idr {
 }
 
 sub find_by_att {
-    my ( $node, $att, $val ) = @_;
+    my ( $node, $att, $val, $depth ) = @_;
     my @nodes;
-    find_by_attr( $node, \@nodes, $att, $val );
+    $depth ||= 400;
+    find_by_attr( $node, \@nodes, $att, $val, $depth );
     return \@nodes;
 }
 sub find_by_attr {
-    my ( $node, $res, $att, $val ) = @_;
+    my ( $node, $res, $att, $val, $depth ) = @_;
     if( ref( $node ) eq 'HASH' ) {
         return if( $node->{'_att'} );
         if( $val =~ m/^\~(.+)/ ) {
@@ -1054,18 +1070,21 @@ sub find_by_attr {
                 }
             }
         }
-        elsif( $node->{$att} && $node->{$att}{'value'} eq $val ) {
-            push( @$res, $node );
+        elsif( $node->{$att} ) {
+            my $nval = $node->{$att}{'value'};
+            if( $nval && $nval eq $val ) {
+              push( @$res, $node );
+            }
         }
         for my $name ( keys %$node ) {
             next if( $name =~ m/^_/ );
             next if( $name eq 'value' );
-            find_by_attr( $node->{$name}, $res, $att, $val );
+            find_by_attr( $node->{$name}, $res, $att, $val, $depth-1 ) if( $depth );
         }
     }
     if( ref( $node ) eq 'ARRAY' ) {
         for my $item ( @$node ) {
-            find_by_attr( $item, $res, $att, $val );
+            find_by_attr( $item, $res, $att, $val, $depth-1  ) if( $depth );
         }
     }
 }
