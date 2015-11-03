@@ -10,13 +10,13 @@
 
 struct mid_lookup_c {
   int depth;
-  int type[26];
-  void *down[26]; // goes to either another mid_lookup or an end_lookup
+  int type[27];
+  void *down[27]; // goes to either another mid_lookup or an end_lookup
 };
 
 struct str_lookup_c {
   struct mid_lookup_c *root;
-  int type[26]; // one character checks
+  int type[27]; // one character checks
   int maxlen;
 };
 
