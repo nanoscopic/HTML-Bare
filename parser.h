@@ -79,6 +79,8 @@ struct parserc {
     int *namelens;
 };
 
+void parserc_stop_outside( struct parserc *self );
+void parserc_get_pos( struct parserc *self );
 int parserc_parse( struct parserc *self, char *newbuf );
 void parserc_cleanup( struct parserc *self );
 int parserc_parse_unsafely( struct parserc *self, char *newbuf );
@@ -86,3 +88,5 @@ int parserc_parse_unsafely( struct parserc *self, char *newbuf );
 struct namec *new_namec( struct namec *last, char *name, int namelen );
 struct namec *del_namec( struct namec *name );
 
+int dh_memcmp(char *a,char *b,int n);
+int dh_memcmp2(char *a,int na,char *b,int nb);
