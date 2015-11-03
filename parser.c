@@ -38,6 +38,9 @@ struct parserc *new_parserc() {
   memset( (char *) self, 0, size );
   self->last_state = 0;
   struct str_lookup_c *l = self->lookup = str_lookup__new();
+  str_lookup__add_str( l, "p", 1, 3 );
+  str_lookup__add_str( l, "li", 2, 3 );
+  
   str_lookup__add_str( l, "br", 2, 2 );
   str_lookup__add_str( l, "hr", 2, 2 );
   str_lookup__add_str( l, "img", 3, 2 );
@@ -178,6 +181,7 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
     char   *cpos          = &htmlin[0];
     int    res            = 0;
     int    dent;
+    int    tagcode        = 0;
     register int let;
     
     struct str_lookup_c *lookup = self->lookup;
@@ -419,8 +423,18 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
           #ifdef DEBUG
           //if( tagname_len ) printf("Creating tag named: %.*s\n", tagname, tagname_len );
           #endif
-          curnode     = nodec_addchildr( curnode, tagname, tagname_len );
-          curname     = new_namec( curname, curnode->name, curnode->namelen );
+          tagcode = str_lookup__find_str( lookup, tagname, tagname_len );
+          #ifdef DEBUG
+          printf("Tagname: %.*s, Tagcode:%i\n", tagname_len, tagname, tagcode );
+          #endif
+          if( tagcode == 3 && !dh_memcmp2( tagname,tagname_len,curnode->name,curnode->namelen ) ) {
+            curnode->z = cpos+1-htmlin;
+            curname = del_namec( curname );
+            curnode = curnode->parent;
+            if( !curnode ) goto done;
+          }
+          curnode = nodec_addchildr( curnode, tagname, tagname_len );
+          curname = new_namec( curname, curnode->name, curnode->namelen );
           attname_len = 0;
           cpos++;
           goto name_gap;
@@ -428,9 +442,16 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
           #ifdef DEBUG
           printf("Tagname length: %i\n", tagname_len );
           #endif
-          if( str_lookup__find_str( lookup, tagname, tagname_len ) ) {
+          tagcode = str_lookup__find_str( lookup, tagname, tagname_len );
+          if( tagcode == 3 && !dh_memcmp2( tagname,tagname_len,curnode->name,curnode->namelen ) ) {
+            curnode->z = cpos+1-htmlin;
+            curname = del_namec( curname );
+            curnode = curnode->parent;
+            if( !curnode ) goto done;
+          }
+          if( tagcode == 2 ) {
             #ifdef DEBUG
-            if( tagname_len ) printf("Creating tag named: %.*s\n", tagname, tagname_len );
+            if( tagname_len ) printf("Creating tag named: %.*s\n", tagname_len, tagname );
             #endif
             temp = nodec_addchildr( curnode, tagname, tagname_len );
             temp->z = cpos +1 - htmlin;
@@ -446,6 +467,13 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
           cpos++;
           goto val_1;
         case '/': // self closing
+          tagcode = str_lookup__find_str( lookup, tagname, tagname_len );
+          if( tagcode == 3 && !dh_memcmp2( tagname,tagname_len,curnode->name,curnode->namelen ) ) {
+            curnode->z = cpos+1-htmlin;
+            curname = del_namec( curname );
+            curnode = curnode->parent;
+            if( !curnode ) goto done;
+          }
           temp = nodec_addchildr( curnode, tagname, tagname_len );
           temp->z = cpos +1 - htmlin;
           tagname_len            = 0;
@@ -471,7 +499,7 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
           cpos++;
           goto name_gap;
         case '>':
-          if( str_lookup__find_str( lookup, tagname, tagname_len ) ) {
+          if( tagcode == 2 ) {
             curnode->z = cpos+1-htmlin;
             curname = del_namec( curname );
             curnode = curnode->parent;
@@ -538,7 +566,7 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
         case 0: last_state = ST_att_name; goto done;
         case '/': // self closing     !! /> is assumed !!
           curatt = nodec_addattr( curnode, attname, attname_len );
-          if( !att_has_val ) { curatt->value = -1; curatt->vallen = 0; }
+          if( !att_has_val ) { curatt->value = 0; curatt->vallen = -1; }
           attname_len            = 0;
           
           curnode->z = cpos+1-htmlin;
@@ -558,9 +586,9 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
           cpos++;
           goto att_space;
         case '>':
-          if( str_lookup__find_str( lookup, tagname, tagname_len ) ) {
+          if( tagcode == 2 ) {
             curatt = nodec_addattr( curnode, attname, attname_len );
-            if( !att_has_val ) { curatt->value = -1; curatt->vallen = 0; }
+            if( !att_has_val ) { curatt->value = 0; curatt->vallen = -1; }
             attname_len            = 0;
             
             curnode->z = cpos+1-htmlin;
@@ -571,7 +599,7 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
             goto val_1;
           }
           curatt = nodec_addattr( curnode, attname, attname_len );
-          if( !att_has_val ) { curatt->value = -1; curatt->vallen = 0; }
+          if( !att_has_val ) { curatt->value = 0; curatt->vallen = -1; }
           attname_len = 0;
           cpos++;
           goto val_1;
@@ -637,7 +665,7 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
         case 0x27: cpos++; goto att_quots; //'
         case '`':  cpos++; goto att_tick;
         case '>': 
-          if( str_lookup__find_str( lookup, tagname, tagname_len ) ) {
+          if( tagcode == 2 ) {
             curnode->z = cpos+1-htmlin;
             curname = del_namec( curname );
             curnode = curnode->parent;
@@ -673,7 +701,7 @@ int parserc_parse( struct parserc *self, char *htmlin ) {
           }
           break;
         case '>':
-          if( str_lookup__find_str( lookup, tagname, tagname_len ) ) {
+          if( tagcode == 2 ) {
             curnode->z = cpos+1-htmlin;
             curname = del_namec( curname );
             curnode = curnode->parent;
@@ -1084,7 +1112,7 @@ int parserc_parse_unsafely( struct parserc *self, char *htmlin ) {
       switch( let ) {
         case '/': // self closing     !! /> is assumed !!
           curatt = nodec_addattr( curnode, attname, attname_len );
-          if( !att_has_val ) { curatt->value = -1; curatt->vallen = 0; }
+          if( !att_has_val ) { curatt->value = 0; curatt->vallen = 0; }
           attname_len = 0;
           
           curnode = curnode->parent;
@@ -1102,7 +1130,7 @@ int parserc_parse_unsafely( struct parserc *self, char *htmlin ) {
           goto u_att_space;
         case '>':
           curatt = nodec_addattr( curnode, attname, attname_len );
-          if( !att_has_val ) { curatt->value = -1; curatt->vallen = 0; }
+          if( !att_has_val ) { curatt->value = 0; curatt->vallen = 0; }
           attname_len = 0;
           cpos++;
           goto u_val_1;
@@ -1224,7 +1252,7 @@ int parserc_parse_unsafely( struct parserc *self, char *htmlin ) {
     
     u_done:
       #ifdef DEBUG
-      printf("done\n", *cpos);
+      printf("done\n");
       #endif
       
       // store the current state of the parser
@@ -1237,7 +1265,7 @@ int parserc_parse_unsafely( struct parserc *self, char *htmlin ) {
       self->att_has_val = att_has_val;
       
       #ifdef DEBUG
-      printf("returning\n", *cpos);
+      printf("returning\n");
       #endif
       return 0;//no error
 }

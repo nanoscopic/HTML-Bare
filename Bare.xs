@@ -145,7 +145,7 @@ SV *chtml2obj( struct parserc *parser, struct nodec *curnode ) {
       SV *atthref = newRV_noinc( (SV *) atth );
       hv_store( output, curatt->name, curatt->namelen, atthref, 0 );
       
-      if( curatt->value == -1 ) {
+      if( curatt->vallen == -1 ) {
         //attval = newSVpvn( "1", 1 );
         attval = newSViv( 1 );
         hv_store( atth, "_blank", 6, attval, blankhash );
@@ -278,7 +278,7 @@ SV *chtml2obj_simple( struct parserc *parser, struct nodec *curnode ) {
   if( numatts ) {
     curatt = curnode->firstatt;
     for( i = 0; i < numatts; i++ ) {
-      if( curatt->value == -1 ) attval = newSVpvn( "1", 1 );
+      if( curatt->vallen == -1 ) attval = newSVpvn( "1", 1 );
       else attval = newSVpvn( curatt->value, curatt->vallen );
       SvUTF8_on(attval);
       hv_store( output, curatt->name, curatt->namelen, attval, 0 );
