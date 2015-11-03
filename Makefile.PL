@@ -24,6 +24,9 @@ my @basics = (
         DynaLoader => 0,
         Exporter => 0
     },
+    MAN1PODS => {
+        'Bare.pod' => 'blib/man1/HTML::Bare.1'
+    }
 );
 
 my $cc = getcc();
